@@ -70,6 +70,9 @@
 #include <unistd.h>
 
 #include "hack.h"
+#ifdef LINUX_SHARED
+#include "linux_shared.h"
+#endif
 
 #ifdef QUEST
 #define	gamename	"quest"
@@ -288,7 +291,11 @@ main(int argc, char **argv)
 	setftty();
 	(void) snprintf(SAVEF, sizeof SAVEF, "save/%u%s", getuid(), plname);
 	regularize(SAVEF+5);		/* avoid . or / in name */
+#ifdef LINUX_SHARED
+	if((fd = hack_open_read(SAVEF)) >= 0) {
+#else
 	if((fd = open(SAVEF, O_RDONLY)) >= 0) {
+#endif
 		(void) signal(SIGINT,done1);
 		pline("Restoring old save file...");
 		(void) fflush(stdout);
@@ -511,8 +518,13 @@ chdirx(char *dir, boolean wr)
 #endif
 		) {
 		/* revoke privs */
+#ifdef LINUX_SHARED
+		if(hack_drop_privs() == -1)
+			error("Cannot drop privileges.");
+#else
 		gid = getgid();
 		setresgid(gid, gid, gid);
+#endif
 	}
 #endif
 
@@ -536,12 +548,20 @@ chdirx(char *dir, boolean wr)
 
 	    if(dir == NULL)
 		dir = ".";
+#ifdef LINUX_SHARED
+	    if((fd = hack_open_rw_create(RECORD, FMASK)) == -1) {
+#else
 	    if((fd = open(RECORD, O_RDWR | O_CREAT, FMASK)) == -1) {
+#endif
 		printf("Warning: cannot write %s/%s", dir, RECORD);
 		getret();
 	    } else
 		(void) close(fd);
+#ifdef LINUX_SHARED
+	    if((fd = hack_open_rw_create(HLOCK, FMASK)) == -1) {
+#else
 	    if((fd = open(HLOCK, O_RDONLY | O_CREAT, FMASK)) == -1) {
+#endif
 		printf("Warning: cannot read %s/%s", dir, HLOCK);
 		getret();
 	    } else

@@ -1,5 +1,7 @@
 *.o
+*.shared.o
 hack
+hack.shared
 hackdir
 hack.onames.h
 makedefs

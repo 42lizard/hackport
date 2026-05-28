@@ -67,6 +67,12 @@
 #include <unistd.h>
 
 #include "hack.h"
+#ifdef LINUX_SHARED
+#include "linux_shared.h"
+#endif
+
+#define	MAX_SAVE_EXTRA	4096
+#define	MAX_SAVE_STRING	BUFSZ
 
 extern char genocided[60];	/* defined in Decl.c */
 extern char fut_geno[60];	/* idem */
@@ -101,7 +107,11 @@ dosave0(int hu)
 
 	(void) signal(SIGHUP, SIG_IGN);
 	(void) signal(SIGINT, SIG_IGN);
+#ifdef LINUX_SHARED
+	if((fd = hack_open_write(SAVEF, FMASK)) == -1) {
+#else
 	if((fd = open(SAVEF, O_CREAT | O_TRUNC | O_WRONLY, FMASK)) == -1) {
+#endif
 		if(!hu) pline("Cannot open save file. (Continue or Quit)");
 		(void) unlink(SAVEF);		/* ab@unido */
 		return(0);
@@ -131,7 +141,11 @@ dosave0(int hu)
 
 		if(tmp == dlevel || !level_exists[tmp]) continue;
 		glo(tmp);
+#ifdef LINUX_SHARED
+		if((ofd = hack_open_read(lock)) == -1) {
+#else
 		if((ofd = open(lock, O_RDONLY)) == -1) {
+#endif
 		    if(!hu) pline("Error while saving: cannot read %s.", lock);
 		    (void) close(fd);
 		    (void) unlink(SAVEF);
@@ -191,9 +205,15 @@ dorecover(int fd)
 	while(1) {
 		if(read(fd, (char *) &tmp, sizeof tmp) != sizeof tmp)
 			break;
+		if(tmp < 0 || tmp > MAXLEVEL)
+			error("Error restoring old game.");
 		getlev(fd, 0, tmp);
 		glo(tmp);
+#ifdef LINUX_SHARED
+		if((nfd = hack_open_write(lock, FMASK)) == -1)
+#else
 		if((nfd = open(lock, O_CREAT | O_TRUNC | O_WRONLY, FMASK)) == -1)
+#endif
 			panic("Cannot open temp file %s!\n", lock);
 		savelev(nfd,tmp);
 		(void) close(nfd);
@@ -243,6 +263,8 @@ restobjchn(int fd)
 	while(1) {
 		mread(fd, (char *) &xl, sizeof(xl));
 		if(xl == -1) break;
+		if(xl < 0 || xl > MAX_SAVE_EXTRA)
+			panic("Bad object length in save file.");
 		otmp = newobj(xl);
 		if(!first) first = otmp;
 		else otmp2->nobj = otmp;
@@ -273,6 +295,8 @@ restmonchn(int fd)
 	while(1) {
 		mread(fd, (char *) &xl, sizeof(xl));
 		if(xl == -1) break;
+		if(xl < 0 || xl > MAX_SAVE_EXTRA)
+			panic("Bad monster length in save file.");
 		mtmp = newmonst(xl);
 		if(!first) first = mtmp;
 		else mtmp2->nmon = mtmp;
@@ -281,6 +305,8 @@ restmonchn(int fd)
 			mtmp->m_id = flags.ident++;
 		mtmp->data = (struct permonst *)
 			((char *) mtmp->data + differ);
+		if(mtmp->data < mons || mtmp->data >= mons + CMNUM + 2)
+			panic("Bad monster data in save file.");
 		if(mtmp->minvent)
 			mtmp->minvent = restobjchn(fd);
 		mtmp2 = mtmp;

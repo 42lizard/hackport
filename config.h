@@ -74,16 +74,36 @@
 			   your C compiler chokes on them */
 /* #define PYRAMID_BUG */	/* avoid a bug on the Pyramid */
 
+#ifndef WIZARD
 #define WIZARD  "bruno"	/* the person allowed to use the -D option */
+#endif
+#ifndef RECORD
 #define RECORD	"record"/* the file containing the list of topscorers */
+#endif
+#ifndef NEWS
 #define	NEWS	"news"	/* the file containing the latest hack news */
+#endif
+#ifndef HELP
 #define	HELP	"/usr/share/games/hack/help"	/* the file containing a description of the commands */
+#endif
+#ifndef SHELP
 #define	SHELP	"/usr/share/games/hack/hh"	/* abbreviated form of the same */
+#endif
+#ifndef RUMORFILE
 #define	RUMORFILE	"/usr/share/games/hack/rumors"	/* a file with fortune cookies */
+#endif
+#ifndef DATAFILE
 #define	DATAFILE	"/usr/share/games/hack/data"	/* a file giving the meaning of symbols used */
+#endif
+#ifndef FMASK
 #define	FMASK	0660	/* file creation mask */
+#endif
+#ifndef HLOCK
 #define	HLOCK	"perm"	/* an empty file used for locking purposes */
+#endif
+#ifndef LLOCK
 #define LLOCK	"safelock"	/* link to previous */
+#endif
 
 #ifdef UNIX
 /*
@@ -120,7 +140,9 @@
 #ifdef QUEST
 #define HACKDIR _PATH_QUEST
 #else /* QUEST */
+#ifndef HACKDIR
 /* #define HACKDIR	_PATH_HACK */
+#endif
 #endif /* QUEST */
 
 /*
@@ -130,7 +152,9 @@
  * since the user might create files in a directory of his choice.
  * Of course SECURE is meaningful only if HACKDIR is defined.
  */
+#ifndef SECURE
 /* #define SECURE */			/* do setuid(getuid()) after chdir() */
+#endif
 
 /*
  * If it is desirable to limit the number of people that can play Hack

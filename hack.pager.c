@@ -72,6 +72,9 @@
 #include <unistd.h>
 
 #include "hack.h"
+#ifdef LINUX_SHARED
+#include "linux_shared.h"
+#endif
 
 extern int CO, LI;	/* usually COLNO and ROWNO+2 */
 extern char *CD;
@@ -441,8 +444,13 @@ child(int wt)
 	if(f == 0){		/* child */
 		settty(NULL);		/* also calls end_screen() */
 		/* revoke privs */
+#ifdef LINUX_SHARED
+		if(hack_drop_privs() == -1)
+			exit(1);
+#else
 		gid = getgid();
 		setresgid(gid, gid, gid);
+#endif
 #ifdef CHDIR
 		home = getenv("HOME");
 		if (home == NULL || *home == '\0')

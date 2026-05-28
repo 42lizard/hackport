@@ -209,18 +209,24 @@ restnames(int fd)
 	mread(fd, (char *) objects, sizeof objects);
 	for(i=0; i < SIZE(objects); i++) {
 		mread(fd, (char *) &len, sizeof len);
+		if(len > BUFSZ)
+			panic("Bad object name length in save file.");
 		if(len) {
 			objects[i].oc_name = (char *) alloc(len);
 			mread(fd, objects[i].oc_name, len);
 		} else
 			objects[i].oc_name = 0;
 		mread(fd, (char *) &len, sizeof len);
+		if(len > BUFSZ)
+			panic("Bad object description length in save file.");
 		if(len) {
 			objects[i].oc_descr = (char *) alloc(len);
 			mread(fd, objects[i].oc_descr, len);
 		} else 
 			objects[i].oc_descr = 0;
 		mread(fd, (char *) &len, sizeof len);
+		if(len > BUFSZ)
+			panic("Bad user object name length in save file.");
 		if(len) {
 			objects[i].oc_uname = (char *) alloc(len);
 			mread(fd, objects[i].oc_uname, len);

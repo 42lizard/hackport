@@ -84,6 +84,9 @@
 #include <unistd.h>
 
 #include "hack.h"
+#ifdef LINUX_SHARED
+#include "linux_shared.h"
+#endif
 
 
 static struct tm *getlt(void);
@@ -198,6 +201,7 @@ getlock(void)
 	(void) fflush(stdout);
 
 	/* we ignore QUIT and INT at this point */
+#ifndef LINUX_SHARED
 	if (link(HLOCK, LLOCK) == -1) {
 		int errnosv = errno;
 
@@ -219,6 +223,7 @@ getlock(void)
 		getret();
 		error("");
 	}
+#endif
 
 	regularize(lock);
 	glo(0);
@@ -227,10 +232,16 @@ getlock(void)
 	do {
 		if(locknum) lock[0] = 'a' + i++;
 
+#ifdef LINUX_SHARED
+		if((fd = hack_open_read(lock)) == -1) {
+#else
 		if((fd = open(lock, O_RDONLY)) == -1) {
+#endif
 			if(errno == ENOENT) goto gotlock;    /* no such file */
 			perror(lock);
+#ifndef LINUX_SHARED
 			(void) unlink(LLOCK);
+#endif
 			error("Cannot open %s", lock);
 		}
 
@@ -243,9 +254,13 @@ getlock(void)
 	error(locknum ? "Too many hacks running now."
 		      : "There is a game in progress under your name.");
 gotlock:
+#ifdef LINUX_SHARED
+	fd = hack_open_excl(lock, FMASK);
+#else
 	fd = open(lock, O_CREAT | O_TRUNC | O_WRONLY, FMASK);
 	if(unlink(LLOCK) == -1)
 		error("Cannot unlink %s.", LLOCK);
+#endif
 	if(fd == -1) {
 		error("cannot creat lock file.");
 	} else {

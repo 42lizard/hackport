@@ -64,6 +64,9 @@
 #include <unistd.h>
 
 #include "hack.h"
+#ifdef LINUX_SHARED
+#include "linux_shared.h"
+#endif
 
 extern char plname[PL_NSIZ];
 extern struct permonst pm_ghost;
@@ -83,7 +86,11 @@ savebones(void)
 	if(!rn2(1 + dlevel/2)) return;	/* not so many ghosts on low levels */
 	bones[6] = '0' + (dlevel/10);
 	bones[7] = '0' + (dlevel%10);
+#ifdef LINUX_SHARED
+	if((fd = hack_open_read(bones)) >= 0){
+#else
 	if((fd = open(bones, O_RDONLY)) >= 0){
+#endif
 		(void) close(fd);
 		return;
 	}
@@ -131,7 +138,11 @@ savebones(void)
 			otmp->cursed = 1;    /* flag as gotten from a ghost */
 		}
 	}
+#ifdef LINUX_SHARED
+	if((fd = hack_open_excl(bones, FMASK)) == -1) return;
+#else
 	if((fd = open(bones, O_CREAT | O_TRUNC | O_WRONLY, FMASK)) == -1) return;
+#endif
 	savelev(fd,dlevel);
 	(void) close(fd);
 }
@@ -144,7 +155,11 @@ getbones(void)
 	if(rn2(3)) return(0);	/* only once in three times do we find bones */
 	bones[6] = '0' + dlevel/10;
 	bones[7] = '0' + dlevel%10;
+#ifdef LINUX_SHARED
+	if((fd = hack_open_read(bones)) == -1) return(0);
+#else
 	if((fd = open(bones, O_RDONLY)) == -1) return(0);
+#endif
 	getlev(fd, 0, dlevel);
 	for(x = 0; x < COLNO; x++) for(y = 0; y < ROWNO; y++)
 		levl[x][y].seen = levl[x][y].new = 0;

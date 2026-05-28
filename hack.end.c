@@ -68,6 +68,9 @@
 #include <unistd.h>
 
 #include "hack.h"
+#ifdef LINUX_SHARED
+#include "linux_shared.h"
+#endif
 
 #define newttentry() (struct toptenentry *) alloc(sizeof(struct toptenentry))
 #define	NAMSZ	8
@@ -304,10 +307,17 @@ topten(void)
 	struct toptenentry *t0, *t1, *tprev;
 	char *recfile = RECORD;
 	char *reclock = "record_lock";
+	int recfd = -1;
 	int sleepct = 300;
-	FILE *rfile;
+	FILE *rfile = NULL;
 	int flg = 0;
 #define	HUP	if(!done_hup)
+#ifdef LINUX_SHARED
+	if(!(rfile = hack_record_lock(&recfd))) {
+		HUP puts("Cannot lock record file!");
+		return;
+	}
+#else
 	while(link(recfile, reclock) == -1) {
 		HUP perror(reclock);
 		if(!sleepct--) {
@@ -324,6 +334,7 @@ topten(void)
 		HUP puts("Cannot open record file!");
 		goto unlock;
 	}
+#endif
 	HUP (void) putchar('\n');
 
 	/* create a new 'topten' entry */
@@ -395,11 +406,19 @@ topten(void)
 	  }
 	}
 	if(flg) {	/* rewrite record file */
+#ifdef LINUX_SHARED
+		if(fflush(rfile) == EOF || ftruncate(fileno(rfile), 0) == -1 ||
+		    fseek(rfile, 0L, SEEK_SET) == -1) {
+			HUP puts("Cannot write record file\n");
+			goto unlock;
+		}
+#else
 		(void) fclose(rfile);
 		if(!(rfile = fopen(recfile,"w"))){
 			HUP puts("Cannot write record file\n");
 			goto unlock;
 		}
+#endif
 
 		if(!done_stopprint) if(rank0 > 0){
 		    if(rank0 <= 10)
@@ -446,9 +465,19 @@ topten(void)
 	}
 	if(rank0 >= rank) if(!done_stopprint)
 		(void) outentry(0, t0, 1);
+	(void) fflush(rfile);
+#ifdef LINUX_SHARED
+	(void) fsync(recfd);
+#endif
 	(void) fclose(rfile);
+	rfile = NULL;
 unlock:
+#ifdef LINUX_SHARED
+	if(rfile)
+		(void) fclose(rfile);
+#else
 	(void) unlink(reclock);
+#endif
 }
 
 static void
@@ -620,6 +649,7 @@ prscore(int argc, char **argv)
 	struct toptenentry *t1, *t2;
 	char *recfile = RECORD;
 	FILE *rfile;
+	int rfd;
 	int flg = 0;
 	int i;
 #ifdef nonsense
@@ -634,7 +664,12 @@ prscore(int argc, char **argv)
 	char *player0;
 #endif /* PERS_IS_UID */
 
+#ifdef LINUX_SHARED
+	if((rfd = hack_open_read(recfile)) == -1 ||
+	    !(rfile = fdopen(rfd, "r"))){
+#else
 	if(!(rfile = fopen(recfile,"r"))){
+#endif
 		puts("Cannot open record file!");
 		return;
 	}

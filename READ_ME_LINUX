@@ -27,6 +27,13 @@ Build the local binary:
 This first builds `makedefs`, uses it to generate `hack.onames.h` from
 `def.objects.h`, and then links `./hack` against curses and libbsd.
 
+Build the shared-install binary:
+
+	make shared
+
+This creates `./hack.shared` with default runtime paths suitable for a
+system install.
+
 Remove generated build output:
 
 	make clean
@@ -55,16 +62,51 @@ Score listing can be checked without starting an interactive game:
 
 	./hack -d ./hackdir -s
 
-Porting scope
--------------
+Shared install
+--------------
 
-The Linux port is intended for local development and play. It does not
-install a setuid binary, does not create shared system game directories,
-and does not install files under `/usr/share` or `/var/games`.
+The shared install mode is intended for a local system package under
+`/usr/local`. It installs:
+
+	/usr/local/games/hack
+	/usr/local/share/games/hack/data
+	/usr/local/share/games/hack/help
+	/usr/local/share/games/hack/hh
+	/usr/local/share/games/hack/rumors
+	/var/games/hack
+
+The installed binary is setgid to the `games` group by default. Mutable
+state lives under `/var/games/hack`, while text assets are read-only under
+`/usr/local/share/games/hack`.
+
+Install into the live system:
+
+	make install-shared
+
+Useful install variables:
+
+	DESTDIR=...
+	PREFIX=/usr/local
+	GAMESDIR=/var/games/hack
+	GAMEGROUP=games
+
+For example, to stage a package image:
+
+	make install-shared DESTDIR=/tmp/hack-install
+
+Do not install this program setuid. The supported shared model is setgid
+`games` only.
+
+Security notes
+--------------
 
 Linux-only compatibility is collected in `linux_compat.h`. Prefer adding
 small Linux shims there instead of spreading platform conditionals through
 gameplay code.
+
+Shared builds define `LINUX_SHARED` and `SECURE`. That enables checked
+opens for runtime files, kernel locking for the score file, and full uid/gid
+privilege dropping before child execs or user-selected directories.
 
 Generated and runtime files
 ---------------------------
@@ -72,9 +114,11 @@ Generated and runtime files
 The following files are generated locally and should not be committed:
 
 	hack
+	hack.shared
 	makedefs
 	hack.onames.h
 	*.o
+	*.shared.o
 	hackdir/
 	record
 	perm

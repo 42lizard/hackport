@@ -67,6 +67,9 @@
 #include <unistd.h>
 
 #include "hack.h"
+#ifdef LINUX_SHARED
+#include "linux_shared.h"
+#endif
 
 extern boolean level_exists[];
 extern struct monst youmonst;
@@ -194,7 +197,11 @@ goto_level(int newlevel, boolean at_stairs)
 	if(newlevel == dlevel) return;	      /* this can happen */
 
 	glo(dlevel);
+#ifdef LINUX_SHARED
+	fd = hack_open_write(lock, FMASK);
+#else
 	fd = open(lock, O_CREAT | O_TRUNC | O_WRONLY, FMASK);
+#endif
 	if(fd == -1) {
 		/*
 		 * This is not quite impossible: e.g., we may have
@@ -232,7 +239,11 @@ goto_level(int newlevel, boolean at_stairs)
 	else {
 		extern int hackpid;
 
+#ifdef LINUX_SHARED
+		if((fd = hack_open_read(lock)) == -1) {
+#else
 		if((fd = open(lock, O_RDONLY)) == -1) {
+#endif
 			pline("Cannot open %s .", lock);
 			pline("Probably someone removed it.");
 			done("tricked");

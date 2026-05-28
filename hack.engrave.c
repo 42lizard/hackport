@@ -363,6 +363,8 @@ rest_engravings(int fd)
 	while(1) {
 		mread(fd, (char *) &lth, sizeof(unsigned));
 		if(lth == 0) return;
+		if(lth > BUFSZ)
+			panic("Bad engraving length in save file.");
 		ep = (struct engr *) alloc(sizeof(struct engr) + lth);
 		mread(fd, (char *) ep, sizeof(struct engr) + lth);
 		ep->nxt_engr = head_engr;
