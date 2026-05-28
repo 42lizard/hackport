@@ -3,5 +3,9 @@ hack
 hackdir
 hack.onames.h
 makedefs
-hack.onames.h
-hack
+perm
+record
+record_lock
+safelock
+save/
+AGENTS.md

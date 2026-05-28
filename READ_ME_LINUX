@@ -1,0 +1,86 @@
+Linux build notes
+=================
+
+This tree keeps the original OpenBSD build files and adds a separate
+GNU make build for Linux. On Linux, plain `make` uses `GNUmakefile`.
+The original `Makefile` is still present for the OpenBSD-style `bmake`
+path.
+
+Dependencies
+------------
+
+You need a C compiler, GNU make, curses, and libbsd development headers.
+On Debian or Ubuntu-like systems this usually means:
+
+	build-essential libncurses-dev libbsd-dev
+
+Install those with your distribution's package manager; package names may
+vary.
+
+Build
+-----
+
+Build the local binary:
+
+	make
+
+This first builds `makedefs`, uses it to generate `hack.onames.h` from
+`def.objects.h`, and then links `./hack` against curses and libbsd.
+
+Remove generated build output:
+
+	make clean
+
+Local runtime directory
+-----------------------
+
+For development runs, use a local game directory instead of system-wide
+or privileged install paths:
+
+	make hackdir
+
+This creates `./hackdir`, copies `data`, `help`, `hh`, and `rumors`, and
+creates the empty runtime files `record` and `perm`. It also creates
+`hackdir/save` for saved games.
+
+Run the game locally:
+
+	make run
+
+This is equivalent to:
+
+	./hack -d ./hackdir
+
+Score listing can be checked without starting an interactive game:
+
+	./hack -d ./hackdir -s
+
+Porting scope
+-------------
+
+The Linux port is intended for local development and play. It does not
+install a setuid binary, does not create shared system game directories,
+and does not install files under `/usr/share` or `/var/games`.
+
+Linux-only compatibility is collected in `linux_compat.h`. Prefer adding
+small Linux shims there instead of spreading platform conditionals through
+gameplay code.
+
+Generated and runtime files
+---------------------------
+
+The following files are generated locally and should not be committed:
+
+	hack
+	makedefs
+	hack.onames.h
+	*.o
+	hackdir/
+	record
+	perm
+	record_lock
+	safelock
+	save/
+
+The top-level `record` and `perm` files may appear if you accidentally
+run `./hack` without `-d ./hackdir`; remove them or leave them ignored.
