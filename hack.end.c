@@ -338,7 +338,7 @@ topten(void)
 	t0->uid = uid;
 	(void) strlcpy(t0->name, plname, sizeof t0->name);
 	(void) strlcpy(t0->death, killer, sizeof t0->death);
-	(void) strlcpy(t0->date, getdate(), sizeof t0->date);
+	(void) strlcpy(t0->date, hack_getdate(), sizeof t0->date);
 
 	/* assure minimum number of points */
 	if(t0->points < POINTSMIN)
